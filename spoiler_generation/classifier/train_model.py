@@ -1,16 +1,14 @@
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 from datasets import load_dataset
-import mlflow
 from transformers import TrainingArguments, Trainer
-import os
 
 
 model = AutoModelForSequenceClassification.from_pretrained(
-    "spoiler_generation/classificator/distilbert-base-v3",
+    "MateuszW/classifier-distilbert",
     num_labels=2,
 )
 tokenizer = AutoTokenizer.from_pretrained(
-    "spoiler_generation/classificator/distilbert-base-v3",
+    "MateuszW/classifier-distilbert",
     model_max_length=512,
 )
 

@@ -24,7 +24,7 @@ tokenized_dataset = load_dataset(
         "validation": "clf_data/val.csv",
     },
 ).map(tokenize_function, batched=True)
-output = "spoiler_generation/classificator/distilbert-base-v4"
+output = "models/classifier/distilbert-finetuned"
 training_args = TrainingArguments(
     output_dir=output,
     evaluation_strategy="steps",

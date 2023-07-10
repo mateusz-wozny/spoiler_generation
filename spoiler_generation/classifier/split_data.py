@@ -3,7 +3,7 @@ from sklearn.model_selection import train_test_split
 import re
 
 
-df = pd.read_csv("spoiler_generation/classificator/data/data_with_train.csv")
+df = pd.read_csv("classifier_data.csv")
 print(df.shape)
 
 
@@ -23,10 +23,10 @@ new_df["text"] = (
 new_df.dropna(inplace=True)
 train, val = train_test_split(new_df, test_size=0.15)
 train.to_csv(
-    "spoiler_generation/classificator/data/train.csv",
+    "classifier_train.csv",
     index=False,
 )
 val.to_csv(
-    "spoiler_generation/classificator/data/val.csv",
+    "classifier_val.csv",
     index=False,
 )

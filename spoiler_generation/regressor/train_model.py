@@ -25,7 +25,7 @@ tokenized_dataset = load_dataset(
 ).map(tokenize_function, batched=True)
 tokenized_dataset = tokenized_dataset.rename_column("bleu", "label")
 
-output = "spoiler_generation/regressor/best-model-deberta-finetune-v2"
+output = "model/regressor/deberta-finetuned"
 training_args = TrainingArguments(
     output_dir=output,
     evaluation_strategy="steps",

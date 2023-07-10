@@ -47,6 +47,6 @@ for clickbait, series in df.groupby(by="clickbait"):
                 )
 
 clf_df.to_csv(
-    "spoiler_generation/classificator/data/data_with_train.csv",
+    "classifier_data.csv",
     index=False,
 )

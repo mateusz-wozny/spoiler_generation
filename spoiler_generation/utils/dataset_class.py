@@ -29,19 +29,11 @@ class Dataset:
             self._df["postText"] = self._df["postText"].explode()
 
     def count_posts_by_tags(self) -> Dict[str, int]:
-        grouped_df = (
-            self._df[["uuid", "tags"]]
-            .set_index("tags")
-            .groupby(level=0)
-            .count()
-            .reset_index()
-        )
+        grouped_df = self._df[["uuid", "tags"]].set_index("tags").groupby(level=0).count().reset_index()
         grouped_df.rename(columns={"uuid": "count"}, inplace=True)
         return grouped_df
 
-    def prepare_post_details(
-        self, tag: str, left_idx: int = 0, right_idx: Optional[int] = None
-    ) -> pd.DataFrame:
+    def prepare_post_details(self, tag: str, left_idx: int = 0, right_idx: Optional[int] = None) -> pd.DataFrame:
         return self._df.loc[
             self._df["tags"] == tag,
             [
@@ -56,9 +48,7 @@ class Dataset:
 
     def get_spoiler_text_by_position(self, tag_df: pd.DataFrame) -> List[str]:
         spoiler_text = []
-        for idx, (paragraph, position) in enumerate(
-            zip(tag_df["targetParagraphs"], tag_df["spoilerPositions"])
-        ):
+        for idx, (paragraph, position) in enumerate(zip(tag_df["targetParagraphs"], tag_df["spoilerPositions"])):
             text = ""
             for points in position:
                 if points[0][0] == -1:
@@ -68,13 +58,9 @@ class Dataset:
             spoiler_text.append(text)
         return spoiler_text
 
-    def prepare_data_for_llm_training(
-        self, save_path: Optional[str] = None
-    ) -> List[Dict]:
+    def prepare_data_for_llm_training(self, save_path: Optional[str] = None) -> List[Dict]:
         data = []
-        for row in self.df[
-            ["targetParagraphs", "postText", "spoiler", "tags"]
-        ].itertuples():
+        for row in self.df[["targetParagraphs", "postText", "spoiler", "tags"]].itertuples():
             record = {}
             context = row.targetParagraphs
             clickbait = row.postText
@@ -123,13 +109,9 @@ class Dataset:
         split_spoiler = spoiler.split()
         return self.subfinder(split_records, split_spoiler)
 
-    def prepare_dataset_for_qa_train(
-        self, save_path: Optional[str] = None, create_test_dataset=False
-    ) -> List[Dict]:
+    def prepare_dataset_for_qa_train(self, save_path: Optional[str] = None, create_test_dataset=False) -> List[Dict]:
         data = []
-        for row in self.df[
-            ["targetParagraphs", "postText", "spoiler", "targetTitle", "tags"]
-        ].itertuples():
+        for row in self.df[["targetParagraphs", "postText", "spoiler", "targetTitle", "tags"]].itertuples():
             record = {}
             context = row.targetParagraphs
             clickbait = row.postText
@@ -154,9 +136,7 @@ class Dataset:
                         continue
                     begin_answer, _ = result
 
-                    record["answers"].append(
-                        {"text": [spoiler], "answer_start": [begin_answer]}
-                    )
+                    record["answers"].append({"text": [spoiler], "answer_start": [begin_answer]})
                 if record["answers"] == []:
                     continue
 

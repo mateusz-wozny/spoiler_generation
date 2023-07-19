@@ -34,11 +34,7 @@ class QuestionAnsweringTrainer(Trainer):
         # Temporarily disable metric computation, we will do it in the loop here.
         compute_metrics = self.compute_metrics
         self.compute_metrics = None
-        eval_loop = (
-            self.prediction_loop
-            if self.args.use_legacy_prediction_loop
-            else self.evaluation_loop
-        )
+        eval_loop = self.prediction_loop if self.args.use_legacy_prediction_loop else self.evaluation_loop
         try:
             output = eval_loop(
                 eval_dataloader,
@@ -52,18 +48,14 @@ class QuestionAnsweringTrainer(Trainer):
             self.compute_metrics = compute_metrics
 
         if self.post_process_function is not None and self.compute_metrics is not None:
-            eval_preds = self.post_process_function(
-                eval_examples, eval_dataset, output.predictions
-            )
+            eval_preds = self.post_process_function(eval_examples, eval_dataset, output.predictions)
             metrics = self.compute_metrics(eval_preds)
 
             self.log(metrics)
         else:
             metrics = {}
 
-        self.control = self.callback_handler.on_evaluate(
-            self.args, self.state, self.control, metrics
-        )
+        self.control = self.callback_handler.on_evaluate(self.args, self.state, self.control, metrics)
         return metrics
 
     def predict(self, predict_dataset, predict_examples, ignore_keys=None):
@@ -72,11 +64,7 @@ class QuestionAnsweringTrainer(Trainer):
         # Temporarily disable metric computation, we will do it in the loop here.
         compute_metrics = self.compute_metrics
         self.compute_metrics = None
-        eval_loop = (
-            self.prediction_loop
-            if self.args.use_legacy_prediction_loop
-            else self.evaluation_loop
-        )
+        eval_loop = self.prediction_loop if self.args.use_legacy_prediction_loop else self.evaluation_loop
         try:
             output = eval_loop(
                 predict_dataloader,
@@ -92,9 +80,7 @@ class QuestionAnsweringTrainer(Trainer):
         if self.post_process_function is None or self.compute_metrics is None:
             return output
 
-        predictions = self.post_process_function(
-            predict_examples, predict_dataset, output.predictions, "predict"
-        )
+        predictions = self.post_process_function(predict_examples, predict_dataset, output.predictions, "predict")
         metrics = self.compute_metrics(predictions)
 
         return PredictionOutput(

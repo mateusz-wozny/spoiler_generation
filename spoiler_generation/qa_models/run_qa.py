@@ -54,34 +54,22 @@ class ModelArguments:
     Arguments pertaining to which model/config/tokenizer we are going to fine-tune from.
     """
 
-    model_name_or_path: str = field(
-        metadata={
-            "help": "Path to pretrained model or model identifier from huggingface.co/models"
-        }
-    )
+    model_name_or_path: str = field(metadata={"help": "Path to pretrained model or model identifier from huggingface.co/models"})
     config_name: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Pretrained config name or path if not the same as model_name"
-        },
+        metadata={"help": "Pretrained config name or path if not the same as model_name"},
     )
     tokenizer_name: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Pretrained tokenizer name or path if not the same as model_name"
-        },
+        metadata={"help": "Pretrained tokenizer name or path if not the same as model_name"},
     )
     cache_dir: Optional[str] = field(
         default=None,
-        metadata={
-            "help": "Path to directory to store the pretrained models downloaded from huggingface.co"
-        },
+        metadata={"help": "Path to directory to store the pretrained models downloaded from huggingface.co"},
     )
     model_revision: str = field(
         default="main",
-        metadata={
-            "help": "The specific model version to use (can be a branch name, tag name or commit id)."
-        },
+        metadata={"help": "The specific model version to use (can be a branch name, tag name or commit id)."},
     )
     use_auth_token: bool = field(
         default=False,
@@ -123,23 +111,18 @@ class DataTrainingArguments:
     )
     max_train_samples: Optional[int] = field(
         default=None,
-        metadata={
-            "help": "For debugging purposes or quicker training, truncate the number of training examples to this "
-            "value if set."
-        },
+        metadata={"help": "For debugging purposes or quicker training, truncate the number of training examples to this " "value if set."},
     )
     max_eval_samples: Optional[int] = field(
         default=None,
         metadata={
-            "help": "For debugging purposes or quicker training, truncate the number of evaluation examples to this "
-            "value if set."
+            "help": "For debugging purposes or quicker training, truncate the number of evaluation examples to this " "value if set."
         },
     )
     max_predict_samples: Optional[int] = field(
         default=None,
         metadata={
-            "help": "For debugging purposes or quicker training, truncate the number of prediction examples to this "
-            "value if set."
+            "help": "For debugging purposes or quicker training, truncate the number of prediction examples to this " "value if set."
         },
     )
     version_2_with_negative: bool = field(
@@ -156,15 +139,11 @@ class DataTrainingArguments:
     )
     doc_stride: int = field(
         default=128,
-        metadata={
-            "help": "When splitting up a long document into chunks, how much stride to take between chunks."
-        },
+        metadata={"help": "When splitting up a long document into chunks, how much stride to take between chunks."},
     )
     n_best_size: int = field(
         default=20,
-        metadata={
-            "help": "The total number of n-best predictions to generate when looking for an answer."
-        },
+        metadata={"help": "The total number of n-best predictions to generate when looking for an answer."},
     )
     max_answer_length: int = field(
         default=30,
@@ -205,9 +184,7 @@ def main(args, df_predict_examples):
     set_seed(training_args.seed)
 
     tokenizer = AutoTokenizer.from_pretrained(
-        model_args.tokenizer_name
-        if model_args.tokenizer_name
-        else model_args.model_name_or_path,
+        model_args.tokenizer_name if model_args.tokenizer_name else model_args.model_name_or_path,
         use_fast=True,
     )
     model = AutoModelForQuestionAnswering.from_pretrained(
@@ -262,8 +239,7 @@ def main(args, df_predict_examples):
             # Set to None the offset_mapping that are not part of the context so it's easy to determine if a token
             # position is part of the context or not.
             tokenized_examples["offset_mapping"][i] = [
-                (o if sequence_ids[k] == context_index else None)
-                for k, o in enumerate(tokenized_examples["offset_mapping"][i])
+                (o if sequence_ids[k] == context_index else None) for k, o in enumerate(tokenized_examples["offset_mapping"][i])
             ]
 
         return tokenized_examples
@@ -293,9 +269,7 @@ def main(args, df_predict_examples):
     data_collator = (
         default_data_collator
         if data_args.pad_to_max_length
-        else DataCollatorWithPadding(
-            tokenizer, pad_to_multiple_of=8 if training_args.fp16 else None
-        )
+        else DataCollatorWithPadding(tokenizer, pad_to_multiple_of=8 if training_args.fp16 else None)
     )
 
     # Post-processing:
@@ -315,18 +289,11 @@ def main(args, df_predict_examples):
         )
         # Format the result to the format the metric expects.
         if data_args.version_2_with_negative:
-            formatted_predictions = [
-                {"id": k, "prediction_text": v, "no_answer_probability": 0.0}
-                for k, v in predictions.items()
-            ]
+            formatted_predictions = [{"id": k, "prediction_text": v, "no_answer_probability": 0.0} for k, v in predictions.items()]
         else:
-            formatted_predictions = [
-                {"id": k, "prediction_text": v} for k, v in predictions.items()
-            ]
+            formatted_predictions = [{"id": k, "prediction_text": v} for k, v in predictions.items()]
 
-        references = [
-            {"id": ex["id"], "answers": ex[answer_column_name]} for ex in examples
-        ]
+        references = [{"id": ex["id"], "answers": ex[answer_column_name]} for ex in examples]
         return EvalPrediction(predictions=formatted_predictions, label_ids=references)
 
     # Initialize our Trainer
@@ -344,6 +311,5 @@ def main(args, df_predict_examples):
 
     logger.info("*** Predict ***")
     return [
-        {"uuid": i["id"], "spoiler": i["prediction_text"].strip()}
-        for i in trainer.predict(predict_dataset, predict_examples).predictions
+        {"uuid": i["id"], "spoiler": i["prediction_text"].strip()} for i in trainer.predict(predict_dataset, predict_examples).predictions
     ]

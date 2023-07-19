@@ -1,5 +1,6 @@
 import pandas as pd
 from sklearn.model_selection import train_test_split
+
 from spoiler_generation.spoiler_generation.utils.dataset_class import Dataset
 
 df = pd.read_csv("spoiler_generation/regressor/best_models_val_data/regressor_data.csv")

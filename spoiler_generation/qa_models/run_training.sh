@@ -1,5 +1,4 @@
-export CUDA_VISIBLE_DEVICES="0"
-python spoiler_generation/hf_qa_train.py \
+python spoiler_generation/qa_models/hf_qa_train.py \
 --train-data train.json \
 --val-data validation.json \
 --model-name MateuszW/deberta-paqott \

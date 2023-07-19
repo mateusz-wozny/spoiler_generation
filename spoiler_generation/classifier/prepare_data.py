@@ -1,8 +1,4 @@
 import pandas as pd
-from evaluate import load
-import numpy as np
-import re
-from nltk.stem import WordNetLemmatizer
 from datasets import load_dataset
 
 dataset = load_dataset(

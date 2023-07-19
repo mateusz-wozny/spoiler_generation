@@ -24,11 +24,11 @@ from torch.utils.data import Dataset
 from transformers import Trainer
 from peft import (
     LoraConfig,
-    PeftConfig,
-    PeftModel,
     get_peft_model,
     prepare_model_for_int8_training,
 )
+
+from spoiler_generation.utils.helpers import create_argparse
 
 
 IGNORE_INDEX = -100
@@ -70,9 +70,7 @@ class ModelArguments:
 
 @dataclass
 class DataArguments:
-    data_path: str = field(
-        default=None, metadata={"help": "Path to the training data."}
-    )
+    data_path: str = field(default=None, metadata={"help": "Path to the training data."})
 
 
 @dataclass
@@ -81,9 +79,7 @@ class TrainingArguments(transformers.TrainingArguments):
     optim: str = field(default="adamw_torch")
     model_max_length: int = field(
         default=512,
-        metadata={
-            "help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."
-        },
+        metadata={"help": "Maximum sequence length. Sequences will be right padded (and possibly truncated)."},
     )
     report_to: str = field(default="none")
 
@@ -113,20 +109,14 @@ def smart_tokenizer_and_embedding_resize(
         input_embeddings = model.get_input_embeddings().weight.data
         output_embeddings = model.get_output_embeddings().weight.data
 
-        input_embeddings_avg = input_embeddings[:-num_new_tokens].mean(
-            dim=0, keepdim=True
-        )
-        output_embeddings_avg = output_embeddings[:-num_new_tokens].mean(
-            dim=0, keepdim=True
-        )
+        input_embeddings_avg = input_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)
+        output_embeddings_avg = output_embeddings[:-num_new_tokens].mean(dim=0, keepdim=True)
 
         input_embeddings[-num_new_tokens:] = input_embeddings_avg
         output_embeddings[-num_new_tokens:] = output_embeddings_avg
 
 
-def _tokenize_fn(
-    strings: Sequence[str], tokenizer: transformers.PreTrainedTokenizer
-) -> Dict:
+def _tokenize_fn(strings: Sequence[str], tokenizer: transformers.PreTrainedTokenizer) -> Dict:
     """Tokenize a list of strings."""
     tokenized_list = [
         tokenizer(
@@ -139,10 +129,7 @@ def _tokenize_fn(
         for text in strings
     ]
     input_ids = labels = [tokenized.input_ids[0] for tokenized in tokenized_list]
-    input_ids_lens = labels_lens = [
-        tokenized.input_ids.ne(tokenizer.pad_token_id).sum().item()
-        for tokenized in tokenized_list
-    ]
+    input_ids_lens = labels_lens = [tokenized.input_ids.ne(tokenizer.pad_token_id).sum().item() for tokenized in tokenized_list]
     return dict(
         input_ids=input_ids,
         labels=labels,
@@ -158,9 +145,7 @@ def preprocess(
 ) -> Dict:
     """Preprocess the data by tokenizing."""
     examples = [s + t for s, t in zip(sources, targets)]
-    examples_tokenized, sources_tokenized = [
-        _tokenize_fn(strings, tokenizer) for strings in (examples, sources)
-    ]
+    examples_tokenized, sources_tokenized = [_tokenize_fn(strings, tokenizer) for strings in (examples, sources)]
     input_ids = examples_tokenized["input_ids"]
     labels = copy.deepcopy(input_ids)
     for label, source_len in zip(labels, sources_tokenized["input_ids_lens"]):
@@ -178,13 +163,8 @@ class SupervisedDataset(Dataset):
             list_data_dict = json.load(f)
 
         prompt_input = PROMPT
-        sources = [
-            prompt_input[example["type"]].format_map(example)
-            for example in list_data_dict
-        ]
-        targets = [
-            f"{example['output']}{tokenizer.eos_token}" for example in list_data_dict
-        ]
+        sources = [prompt_input[example["type"]].format_map(example) for example in list_data_dict]
+        targets = [f"{example['output']}{tokenizer.eos_token}" for example in list_data_dict]
 
         data_dict = preprocess(sources, targets, tokenizer)
 
@@ -205,15 +185,9 @@ class DataCollatorForSupervisedDataset(object):
     tokenizer: transformers.PreTrainedTokenizer
 
     def __call__(self, instances: Sequence[Dict]) -> Dict[str, torch.Tensor]:
-        input_ids, labels = tuple(
-            [instance[key] for instance in instances] for key in ("input_ids", "labels")
-        )
-        input_ids = torch.nn.utils.rnn.pad_sequence(
-            input_ids, batch_first=True, padding_value=self.tokenizer.pad_token_id
-        )
-        labels = torch.nn.utils.rnn.pad_sequence(
-            labels, batch_first=True, padding_value=IGNORE_INDEX
-        )
+        input_ids, labels = tuple([instance[key] for instance in instances] for key in ("input_ids", "labels"))
+        input_ids = torch.nn.utils.rnn.pad_sequence(input_ids, batch_first=True, padding_value=self.tokenizer.pad_token_id)
+        labels = torch.nn.utils.rnn.pad_sequence(labels, batch_first=True, padding_value=IGNORE_INDEX)
         return dict(
             input_ids=input_ids,
             labels=labels,
@@ -221,15 +195,15 @@ class DataCollatorForSupervisedDataset(object):
         )
 
 
-def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer) -> Dict:
+def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer, args) -> Dict:
     """Make dataset and collator for supervised fine-tuning."""
     train_dataset = SupervisedDataset(
         tokenizer=tokenizer,
-        data_path="data/llama_generation/train.json",
+        data_path=args.train_data,
     )
     eval_dataset = SupervisedDataset(
         tokenizer=tokenizer,
-        data_path="data/llama_generation/validation.json",
+        data_path=args.val_data,
     )
     data_collator = DataCollatorForSupervisedDataset(tokenizer=tokenizer)
     return dict(
@@ -239,17 +213,16 @@ def make_supervised_data_module(tokenizer: transformers.PreTrainedTokenizer) -> 
     )
 
 
-def train():
-    model_name = "facebook/opt-13B"
+def train(args):
     model = transformers.AutoModelForCausalLM.from_pretrained(
-        model_name,
+        args.model_name,
         load_in_8bit=True,
         device_map="auto",
     )
 
     tokenizer = transformers.AutoTokenizer.from_pretrained(
-        model_name,
-        model_max_length=1024,
+        args.model_name,
+        model_max_length=args.max_length,
     )
     if tokenizer.pad_token is None:
         smart_tokenizer_and_embedding_resize(
@@ -270,30 +243,30 @@ def train():
     )
 
     model = get_peft_model(model, config)
-    data_module = make_supervised_data_module(tokenizer=tokenizer)
+    data_module = make_supervised_data_module(tokenizer=tokenizer, args=args)
     output_dir = "models/opt-pwt"
     training_args = TrainingArguments(
         output_dir=output_dir,
         evaluation_strategy="epoch",
         save_strategy="no",
-        learning_rate=1e-5,
-        per_device_train_batch_size=10,
-        per_device_eval_batch_size=10,
+        learning_rate=args.learning_rate,
+        per_device_train_batch_size=args.batch_size,
+        per_device_eval_batch_size=args.batch_size,
         warmup_steps=100,
-        num_train_epochs=4,
+        num_train_epochs=args.epochs,
         fp16=True,
         logging_steps=100,
         push_to_hub=False,
         report_to="mlflow",
-        model_max_length=1024,
+        model_max_length=args.max_length,
     )
-    trainer = Trainer(
-        model=model, tokenizer=tokenizer, args=training_args, **data_module
-    )
+    trainer = Trainer(model=model, tokenizer=tokenizer, args=training_args, **data_module)
     model.config.use_cache = False
     trainer.train()
     model.save_pretrained(output_dir)
 
 
 if __name__ == "__main__":
-    train()
+    parser = create_argparse()
+    args = parser.parse_args()
+    train(args)

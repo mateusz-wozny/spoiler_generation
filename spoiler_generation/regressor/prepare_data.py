@@ -9,9 +9,7 @@ bleu = load("bleu")
 def prepare_data_from_hf(test_path: str, output_path: str) -> pd.DataFrame:
     test_df = pd.read_json(test_path)
     output_df = pd.read_json(output_path, lines=True)
-    test_df["answers"] = test_df["answers"].apply(
-        lambda x: "\n".join([record["text"][0] for record in x])
-    )
+    test_df["answers"] = test_df["answers"].apply(lambda x: "\n".join([record["text"][0] for record in x]))
     data = []
     for reference, context, question, hypothesis in zip(
         test_df["answers"],

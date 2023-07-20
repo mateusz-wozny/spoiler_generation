@@ -30,7 +30,7 @@ dependencies = [
     "bitsandbytes~=0.38.0.post2",
     "accelerate~=0.18.0",
     "bert_score~=0.3.13",
-    # "torch~=1.13.1",
+    "torch~=1.13.1",
 ]
 
 [project.optional-dependencies]

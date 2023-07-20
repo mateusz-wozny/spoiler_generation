@@ -1,5 +1,4 @@
-OUTPUT_DIR="MateuszW/deberta-paqott"
-python spoiler_generation/transformers_tutorial/predict_model.py \
+python spoiler_generation/qa_models/predict_model.py \
 --input test.json \
---output $OUTPUT_DIR/output.jsonl \
---model $OUTPUT_DIR
+--output output.jsonl \
+--model "MateuszW/deberta-paqott"
